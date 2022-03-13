@@ -23,8 +23,8 @@ Since Bluetrade is currently hosted on GitHub packages, you will need to make a 
 ```ts
 import { getEquiv } from '@ilefa/bluetrade';
 
-// Fetch all equivalent courses for CSE1010
-let equiv = getEquiv("CSE1010");
+// Fetch all equivalent courses for MATH2710
+let equiv = getEquiv("MATH2710");
 
 [
     {
