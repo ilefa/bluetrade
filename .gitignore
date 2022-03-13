@@ -1,0 +1,11 @@
+# Directories
+dist/
+test/
+node_modules/
+
+# Files
+classrooms-*.json
+courses-*.json
+rmpIds-*.json
+*.tgz
+*.test.ts
