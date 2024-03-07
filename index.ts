@@ -1,8 +1,8 @@
 import data from './equiv.json';
 
 export type TransferableCourse = {
-    external: SimpleExternalCourse;
-    equiv: Course[];
+    course: Course;
+    equivalent: SimpleExternalCourse[];
 }
 
 export type SimpleExternalCourse = {
@@ -10,7 +10,7 @@ export type SimpleExternalCourse = {
     name: string;
 }
 
-type Course = {
+export type Course = {
     name: string;
     catalogName: string;
     catalogNumber: string;
@@ -38,6 +38,8 @@ enum ContentArea {
     CA4INT = 'CA4INT'
 }
 
+const DATA = data as TransferableCourse[];
+
 /**
  * Returns all equivalent courses offered by other
  * institutions for the given course.
@@ -48,7 +50,10 @@ enum ContentArea {
  * 
  * @param name the name of the course to search
  */
-export const getEquiv = (name: string): TransferableCourse[] => {
-    let DATA = (data as TransferableCourse[][]).reduce((acc, cur) => acc.concat(cur), []);
-    return DATA.filter(c => c.equiv.some(e => e.name.toLowerCase() === name.toLowerCase()));
+export const getEquiv = (name: string): TransferableCourse => {
+    let match = DATA.find(({ course }) => course.name.toLowerCase() === name.toLowerCase());
+    if (!match) return null;
+    return match;
 }
+
+export { DATA as Equivalencies };
