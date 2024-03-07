@@ -8,4 +8,5 @@ equiv-*.json
 subjects-*.json
 *.test.ts
 *.tgz
+LICENSE.md
 README.md
