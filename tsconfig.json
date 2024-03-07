@@ -3,7 +3,6 @@
         "lib": [
             "es5",
             "es6",
-            "es2016",
             "ES2019.String"
         ],
         "target": "es6",
@@ -22,5 +21,8 @@
         "./node_modules",
         "./dist",
         "./test",
+        "equiv.json",
+        "equiv-full.json",
+        "*.test.ts"
     ]
 }
