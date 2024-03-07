@@ -1,7 +1,8 @@
-import fs from 'fs';
 import axios from 'axios';
 import subjects from '../subjects.json';
 import mappings from '@ilefa/husky/courses.json';
+
+import { existsSync, renameSync, writeFileSync } from 'fs';
 
 export type TransferableCourse = {
     external: SimpleExternalCourse;
@@ -14,7 +15,7 @@ export type SimpleExternalCourse = {
 }
 
 type ExternalSubjectMapping = {
-    target: string;
+    school: string;
     subjects: string[];
 }
 
@@ -58,47 +59,6 @@ enum ContentArea {
     CA4INT = 'CA4INT'
 }
 
-const TARGETS = [
-    "Albertus Magnus College",
-    "Asnuntuck Community College",
-    "Capital Community College",
-    "Central Connecticut State Univ",
-    "Charter Oak State College",
-    "Connecticut College",
-    "Eastern Connecticut St Univ",
-    "Fairfield University",
-    "Gateway Community College",
-    "Goodwin College",
-    "Hartford College Women",
-    "Holy Apostles Coll & Seminary",
-    "Housatonic Community College",
-    "Lincoln Coll of New England",
-    "Manchester Community College",
-    "Middlesex Community College",
-    "Military Training",
-    "Mitchell College",
-    "Naugatuck Valley Cmty College",
-    "Northwestern CT Cmty Coll",
-    "Norwalk Community College",
-    "Post University",
-    "Quinebaug Valley Cmty Coll",
-    "Quinnipiac University",
-    "Sacred Heart University",
-    "Southern Connecticut State University",
-    "St Vincents College",
-    "Three Rivers Community College",
-    "Trinity College Ct",
-    "Tunxis Community College",
-    "United States Coast Guard Acad",
-    "Univ Bridgeport",
-    "Univ Hartford",
-    "Univ New Haven",
-    "University of Saint Joseph",
-    "Wesleyan University",
-    "Western Connecticut State University",
-    "Yale University"
-];
-
 const isNLevel = (input: string, subject: string, course: Course) => {
     let [_a, _b, number, _c] = input.split(/^([\w/]{1,10}) (\d{3,4}) Level$/);
     return course.name.split(course.catalogNumber)[0] === subject && course.catalogNumber.substring(0, 1) === number[0];
@@ -110,19 +70,24 @@ const isNLevel = (input: string, subject: string, course: Course) => {
     let start = Date.now();
     let matches: TransferableCourse[][] = [];
 
-    for await (let { target, subjects } of SUBJECTS) {
-        console.log(target);
+    let segment = 1;
+    let i = 0;
+
+    for await (let { school, subjects } of SUBJECTS) {
+        console.log(segment, school);
+        let start = i;
         for await (let subject of subjects) {
             let courses = await axios
-                .get(`https://admissions.uconn.edu/wp-json/uconn/v1/transfer-credits/subjects/${subject}?school=${target.replace(/\s/g, '%20')}`)
-                .then(res => res.data as ExternalCourse[]);
+                .get(`https://admissions.uconn.edu/wp-json/uconn/v1/transfer-credits/subjects/${subject}?school=${school.replace(/\s/g, '%20')}`)
+                .then(res => res.data as ExternalCourse[])
+                .catch(_ => []);
 
             let targets: TransferableCourse[] = courses.map(course => {
                 return {
                     external: {
+                        school,
                         name: course.ext_subject + course.ext_number,
                         title: course.int_title,
-                        school: target
                     },
                     equiv: MAPPINGS.filter(mapping =>
                         (mapping.name.split(/\d{3,4}/)[0].toLowerCase() === course.int_subject.toLowerCase() && mapping.catalogNumber === course.int_number)
@@ -135,10 +100,26 @@ const isNLevel = (input: string, subject: string, course: Course) => {
 
             let internalCourses = targets.map(target => target.equiv.length).reduce((a, b) => a + b, 0);
             console.log(` - ${subject} (${targets.length} course${targets.length === 1 ? '' : 's'}) :: ${internalCourses} mapping${internalCourses === 1 ? '' : 's'}`);
+
+            i++;
         }
+
+        let targets = matches.slice(start, i);
+        writeFileSync(`./equiv-${++segment}.json`, JSON.stringify({ school, targets }, null, 3), { encoding: 'utf8' });
     }
 
     matches = matches.filter(match => match.length > 0);
     console.log(`Finished generating transfer equivalency tree in ${Date.now() - start}ms`);
-    fs.writeFileSync('./equiv.json', JSON.stringify(matches, null, 3), { encoding: 'utf8' });
+
+    // check if the file exists, if so, rename it to a timestamped version
+    let path = './equiv.json';
+    if (existsSync(path)) {
+        let timestamp = Date.now();
+        let newPath = path.replace('.json', `-${timestamp}.json`);
+        console.log(`Found old equiv outfile, preserving it as: \`${newPath}\``);
+        renameSync(path, newPath);
+    }
+
+    writeFileSync('./equiv.json', JSON.stringify(matches, null, 3), { encoding: 'utf8' });
+    console.log('Wrote equivalencies to `equiv.json`. Run `npm run merge` to merge and clean up fragments.');
 })();

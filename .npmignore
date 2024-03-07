@@ -4,6 +4,8 @@ test/
 node_modules/
 
 # Files
+equiv-*.json
+subjects-*.json
 *.test.ts
 *.tgz
 README.md

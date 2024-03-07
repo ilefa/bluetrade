@@ -4,6 +4,7 @@ export type TransferableCourse = {
     external: SimpleExternalCourse;
     equiv: Course[];
 }
+
 export type SimpleExternalCourse = {
     school: string;
     name: string;

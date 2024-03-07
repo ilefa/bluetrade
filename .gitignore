@@ -7,5 +7,6 @@ node_modules/
 classrooms-*.json
 courses-*.json
 rmpIds-*.json
+equiv-*.json
 *.tgz
 *.test.ts
